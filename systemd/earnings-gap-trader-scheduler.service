@@ -1,0 +1,81 @@
+# Systemd service file for Earnings Gap Trading System - Celery Beat Scheduler
+# Location: /etc/systemd/system/earnings-gap-trader-scheduler.service
+
+[Unit]
+Description=Earnings Gap Trading System - Task Scheduler
+Documentation=https://github.com/your-org/earnings-gap-trader
+After=network.target postgresql.service redis.service rabbitmq-server.service earnings-gap-trader-worker.service
+Wants=network.target
+Requires=postgresql.service redis.service rabbitmq-server.service
+
+[Service]
+Type=exec
+User=trader
+Group=trader
+WorkingDirectory=/opt/earnings_gap_trader/app
+Environment=PATH=/opt/earnings_gap_trader/venv/bin
+EnvironmentFile=/opt/earnings_gap_trader/config/.env
+
+# Celery beat scheduler process
+ExecStart=/opt/earnings_gap_trader/venv/bin/celery \
+    --app=core.celery_app \
+    beat \
+    --loglevel=info \
+    --scheduler=django_celery_beat.schedulers:DatabaseScheduler \
+    --pidfile=/var/run/earnings_gap_trader/celerybeat.pid
+
+# Create PID directory
+ExecStartPre=/bin/mkdir -p /var/run/earnings_gap_trader
+ExecStartPre=/bin/chown trader:trader /var/run/earnings_gap_trader
+
+# Graceful shutdown
+ExecStop=/bin/kill -TERM $MAINPID
+
+# Cleanup PID file on stop
+ExecStopPost=/bin/rm -f /var/run/earnings_gap_trader/celerybeat.pid
+
+# Restart configuration
+Restart=always
+RestartSec=10
+StartLimitBurst=3
+StartLimitInterval=300
+
+# Resource limits
+LimitNOFILE=1024
+LimitNPROC=512
+MemoryLimit=512M
+CPUQuota=25%
+
+# Security measures
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/earnings_gap_trader /var/log/earnings_gap_trader /var/run/earnings_gap_trader
+PrivateDevices=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+RestrictRealtime=true
+RestrictNamespaces=true
+
+# Process management
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=earnings-gap-trader-scheduler
+
+# Working directory permissions
+UMask=0027
+
+# PID file management
+PIDFile=/var/run/earnings_gap_trader/celerybeat.pid
+RuntimeDirectory=earnings_gap_trader
+RuntimeDirectoryMode=0755
+
+[Install]
+WantedBy=multi-user.target

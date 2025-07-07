@@ -1,0 +1,881 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Earnings Gap Trader{% endblock %}
+
+{% block content %}
+<!-- Key Metrics Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card metric-card">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <div class="metric-value profit" id="totalPnL">₹0.00</div>
+                    <div class="metric-label">Total P&L</div>
+                    <small class="text-muted" id="todayPnL">Today: ₹0.00</small>
+                </div>
+                <div class="text-primary">
+                    <i class="fas fa-chart-line fa-3x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card metric-card">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <div class="metric-value text-info" id="activePositions">0</div>
+                    <div class="metric-label">Active Positions</div>
+                    <small class="text-muted">Max: <span id="maxPositions">5</span></small>
+                </div>
+                <div class="text-info">
+                    <i class="fas fa-briefcase fa-3x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card metric-card">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <div class="metric-value text-warning" id="signalsToday">0</div>
+                    <div class="metric-label">Signals Today</div>
+                    <small class="text-muted">Scanned: <span id="stocksScanned">0</span></small>
+                </div>
+                <div class="text-warning">
+                    <i class="fas fa-search fa-3x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card metric-card">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <div class="metric-value text-success" id="winRate">0%</div>
+                    <div class="metric-label">Win Rate</div>
+                    <small class="text-muted"><span id="winTrades">0</span>/<span id="totalTrades">0</span> trades</small>
+                </div>
+                <div class="text-success">
+                    <i class="fas fa-trophy fa-3x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Real-time P&L Chart -->
+<div class="row mb-4">
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-area me-2"></i>
+                    Real-time P&L Performance
+                </h5>
+                <div class="btn-group btn-group-sm" role="group">
+                    <input type="radio" class="btn-check" name="chartPeriod" id="chart1h" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary" for="chart1h">1H</label>
+                    
+                    <input type="radio" class="btn-check" name="chartPeriod" id="chart1d" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="chart1d">1D</label>
+                    
+                    <input type="radio" class="btn-check" name="chartPeriod" id="chart1w" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="chart1w">1W</label>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="pnlChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Live Signals Feed -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-signal me-2"></i>
+                    Live Signals
+                </h5>
+                <span class="status-indicator status-online" id="signalFeedStatus"></span>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" id="signalsFeed" style="max-height: 350px; overflow-y: auto;">
+                    <div class="list-group-item text-center text-muted py-4">
+                        <i class="fas fa-satellite-dish fa-2x mb-2"></i>
+                        <p class="mb-0">Waiting for signals...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Position Details and Risk Monitor -->
+<div class="row mb-4">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    Current Positions
+                </h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-success me-2" id="autoRefreshBtn" onclick="toggleAutoRefresh()">
+                        <i class="fas fa-sync-alt me-1"></i>
+                        Auto Refresh
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="refreshPositions()">
+                        <i class="fas fa-refresh me-1"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Qty</th>
+                                <th>Entry</th>
+                                <th>Current</th>
+                                <th>P&L</th>
+                                <th>%</th>
+                                <th>Time</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="positionsTableBody">
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                                    No active positions
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Risk Monitor -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    Risk Monitor
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Portfolio Risk -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>Portfolio Risk</small>
+                        <small class="text-muted" id="portfolioRiskValue">2.5%</small>
+                    </div>
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-success" id="portfolioRiskBar" style="width: 25%"></div>
+                    </div>
+                </div>
+                
+                <!-- Daily Loss Limit -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>Daily Loss Limit</small>
+                        <small class="text-muted" id="dailyLossValue">₹500 / ₹5,000</small>
+                    </div>
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-warning" id="dailyLossBar" style="width: 10%"></div>
+                    </div>
+                </div>
+                
+                <!-- Position Concentration -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>Position Concentration</small>
+                        <small class="text-muted" id="concentrationValue">15%</small>
+                    </div>
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-info" id="concentrationBar" style="width: 15%"></div>
+                    </div>
+                </div>
+                
+                <!-- Risk Alerts -->
+                <div class="alert alert-success py-2 px-3 mb-0">
+                    <i class="fas fa-check-circle me-1"></i>
+                    <small>All risk limits within bounds</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Earnings Scanner Status -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-radar-scanner me-2"></i>
+                    Earnings Gap Scanner
+                </h5>
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-success me-3" id="scannerStatus">
+                        <i class="fas fa-circle me-1"></i>
+                        Active
+                    </span>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" id="pauseScannerBtn" onclick="toggleScanner()">
+                            <i class="fas fa-pause me-1"></i>
+                            Pause
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="scanNow()">
+                            <i class="fas fa-search me-1"></i>
+                            Scan Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 mb-1" id="companiesScanned">0</div>
+                            <small class="text-muted">Companies Scanned</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 mb-1" id="gapsFound">0</div>
+                            <small class="text-muted">Gaps Found</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 mb-1" id="qualifiedSignals">0</div>
+                            <small class="text-muted">Qualified Signals</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <div class="h4 mb-1" id="lastScanTime">--:--</div>
+                            <small class="text-muted">Last Scan</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Gaps Table -->
+                <div class="mt-4">
+                    <h6 class="mb-3">Recent Gaps Detected</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Company</th>
+                                    <th>Gap %</th>
+                                    <th>Volume Ratio</th>
+                                    <th>Confidence</th>
+                                    <th>Detected</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentGapsTable">
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-3">
+                                        <i class="fas fa-search me-1"></i>
+                                        No gaps detected yet
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Signal Approval Modal -->
+<div class="modal fade" id="signalApprovalModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Signal Approval Required
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Signal Details</h6>
+                        <table class="table table-sm">
+                            <tr><td>Symbol:</td><td><strong id="modalSymbol">-</strong></td></tr>
+                            <tr><td>Company:</td><td id="modalCompany">-</td></tr>
+                            <tr><td>Signal Type:</td><td><span class="badge" id="modalSignalType">-</span></td></tr>
+                            <tr><td>Confidence:</td><td><span class="badge" id="modalConfidence">-</span></td></tr>
+                            <tr><td>Gap %:</td><td id="modalGapPercent">-</td></tr>
+                            <tr><td>Volume Ratio:</td><td id="modalVolumeRatio">-</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Trade Parameters</h6>
+                        <table class="table table-sm">
+                            <tr><td>Entry Price:</td><td id="modalEntryPrice">-</td></tr>
+                            <tr><td>Stop Loss:</td><td id="modalStopLoss">-</td></tr>
+                            <tr><td>Target:</td><td id="modalTarget">-</td></tr>
+                            <tr><td>Risk/Reward:</td><td id="modalRiskReward">-</td></tr>
+                            <tr><td>Position Size:</td><td id="modalPositionSize">-</td></tr>
+                            <tr><td>Max Risk:</td><td id="modalMaxRisk">-</td></tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <h6>Signal Explanation</h6>
+                    <div class="alert alert-info" id="modalExplanation">
+                        Signal explanation will appear here...
+                    </div>
+                </div>
+                
+                <!-- Manual Position Size Adjustment -->
+                <div class="mt-3">
+                    <h6>Position Size Adjustment</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" class="form-control" id="manualQuantity" min="1">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Investment Amount</label>
+                            <input type="number" class="form-control" id="manualInvestment" min="100">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>
+                    Reject
+                </button>
+                <button type="button" class="btn btn-warning" onclick="modifySignal()">
+                    <i class="fas fa-edit me-1"></i>
+                    Modify
+                </button>
+                <button type="button" class="btn btn-success" onclick="approveSignal()">
+                    <i class="fas fa-check me-1"></i>
+                    Approve & Execute
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Dashboard Variables
+let pnlChart;
+let autoRefreshInterval;
+let isAutoRefreshEnabled = true;
+
+// Initialize Dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    initializePnLChart();
+    setupWebSocketHandlers();
+    startAutoRefresh();
+    requestInitialData();
+});
+
+// Initialize P&L Chart
+function initializePnLChart() {
+    const ctx = document.getElementById('pnlChart').getContext('2d');
+    
+    pnlChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Cumulative P&L',
+                data: [],
+                borderColor: 'rgb(16, 185, 129)',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'minute',
+                        displayFormats: {
+                            minute: 'HH:mm'
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return formatCurrency(value);
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'P&L: ' + formatCurrency(context.parsed.y);
+                        }
+                    }
+                },
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+// Setup WebSocket Message Handlers
+function setupWebSocketHandlers() {
+    if (typeof websocket !== 'undefined') {
+        // Handle P&L updates
+        websocket.onPnLUpdate = function(data) {
+            updatePnLMetrics(data);
+            updatePnLChart(data);
+        };
+        
+        // Handle position updates
+        websocket.onPositionUpdate = function(data) {
+            updatePositionsTable(data.positions);
+        };
+        
+        // Handle signal alerts
+        websocket.onSignalAlert = function(data) {
+            addSignalToFeed(data);
+            if (window.tradingMode === 'MANUAL') {
+                showSignalApprovalModal(data);
+            }
+        };
+        
+        // Handle trade updates
+        websocket.onTradeUpdate = function(data) {
+            updateTradeStatus(data);
+            showToast(`Trade ${data.action}: ${data.symbol}`, 'success');
+        };
+        
+        // Handle system status
+        websocket.onSystemStatus = function(data) {
+            updateSystemStatus(data);
+        };
+    }
+}
+
+// Update P&L Metrics
+function updatePnLMetrics(data) {
+    const totalPnL = data.total_pnl || 0;
+    const todayPnL = data.today_pnl || 0;
+    
+    document.getElementById('totalPnL').textContent = formatCurrency(totalPnL);
+    document.getElementById('totalPnL').className = 'metric-value ' + getValueColorClass(totalPnL);
+    
+    document.getElementById('todayPnL').textContent = 'Today: ' + formatCurrency(todayPnL);
+}
+
+// Update P&L Chart
+function updatePnLChart(data) {
+    const now = new Date();
+    
+    pnlChart.data.labels.push(now);
+    pnlChart.data.datasets[0].data.push(data.total_pnl || 0);
+    
+    // Keep only last 100 data points
+    if (pnlChart.data.labels.length > 100) {
+        pnlChart.data.labels.shift();
+        pnlChart.data.datasets[0].data.shift();
+    }
+    
+    pnlChart.update('none');
+}
+
+// Update Positions Table
+function updatePositionsTable(positions) {
+    const tbody = document.getElementById('positionsTableBody');
+    
+    if (!positions || positions.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center text-muted py-4">
+                    <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                    No active positions
+                </td>
+            </tr>
+        `;
+        document.getElementById('activePositions').textContent = '0';
+        return;
+    }
+    
+    document.getElementById('activePositions').textContent = positions.length;
+    
+    tbody.innerHTML = positions.map(position => `
+        <tr>
+            <td>
+                <strong>${position.symbol}</strong>
+            </td>
+            <td>${position.quantity}</td>
+            <td>${formatCurrency(position.entry_price)}</td>
+            <td>${formatCurrency(position.current_price)}</td>
+            <td class="${getValueColorClass(position.pnl)}">
+                ${position.pnl >= 0 ? '+' : ''}${formatCurrency(position.pnl)}
+            </td>
+            <td class="${getValueColorClass(position.pnl_percent)}">
+                ${formatPercentage(position.pnl_percent)}
+            </td>
+            <td>
+                <small>${new Date(position.entry_time).toLocaleTimeString()}</small>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-outline-danger" onclick="closePosition('${position.symbol}')" title="Close Position">
+                    <i class="fas fa-times"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Add Signal to Live Feed
+function addSignalToFeed(signal) {
+    const feed = document.getElementById('signalsFeed');
+    
+    // Clear placeholder if it exists
+    if (feed.querySelector('.text-muted')) {
+        feed.innerHTML = '';
+    }
+    
+    const signalItem = document.createElement('div');
+    signalItem.className = 'list-group-item';
+    signalItem.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <div class="d-flex justify-content-between">
+                    <h6 class="mb-1">${signal.symbol}</h6>
+                    <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+                </div>
+                <p class="mb-1">
+                    <span class="badge bg-${signal.signal_type === 'EARNINGS_GAP_UP' ? 'success' : 'danger'} me-1">
+                        ${signal.gap_percent >= 0 ? '+' : ''}${signal.gap_percent.toFixed(1)}%
+                    </span>
+                    <span class="badge bg-secondary">
+                        ${signal.confidence} (${signal.confidence_score}%)
+                    </span>
+                </p>
+                <small class="text-muted">
+                    Entry: ${formatCurrency(signal.entry_price)} | 
+                    Target: ${formatCurrency(signal.profit_target)}
+                </small>
+            </div>
+        </div>
+    `;
+    
+    feed.insertBefore(signalItem, feed.firstChild);
+    
+    // Keep only last 10 signals
+    const items = feed.querySelectorAll('.list-group-item');
+    if (items.length > 10) {
+        items[items.length - 1].remove();
+    }
+    
+    // Update signals count
+    const currentCount = parseInt(document.getElementById('signalsToday').textContent) || 0;
+    document.getElementById('signalsToday').textContent = currentCount + 1;
+}
+
+// Show Signal Approval Modal
+function showSignalApprovalModal(signal) {
+    // Populate modal with signal data
+    document.getElementById('modalSymbol').textContent = signal.symbol;
+    document.getElementById('modalCompany').textContent = signal.company_name || signal.symbol;
+    document.getElementById('modalSignalType').textContent = signal.signal_type;
+    document.getElementById('modalSignalType').className = `badge bg-${signal.signal_type === 'EARNINGS_GAP_UP' ? 'success' : 'danger'}`;
+    document.getElementById('modalConfidence').textContent = `${signal.confidence} (${signal.confidence_score}%)`;
+    document.getElementById('modalConfidence').className = `badge bg-${signal.confidence === 'HIGH' ? 'success' : signal.confidence === 'MEDIUM' ? 'warning' : 'secondary'}`;
+    document.getElementById('modalGapPercent').textContent = `${signal.gap_percent >= 0 ? '+' : ''}${signal.gap_percent.toFixed(1)}%`;
+    document.getElementById('modalVolumeRatio').textContent = `${signal.volume_ratio.toFixed(1)}x`;
+    document.getElementById('modalEntryPrice').textContent = formatCurrency(signal.entry_price);
+    document.getElementById('modalStopLoss').textContent = formatCurrency(signal.stop_loss);
+    document.getElementById('modalTarget').textContent = formatCurrency(signal.profit_target);
+    document.getElementById('modalRiskReward').textContent = `1:${signal.risk_reward_ratio.toFixed(1)}`;
+    document.getElementById('modalPositionSize').textContent = formatCurrency(signal.position_size);
+    document.getElementById('modalExplanation').textContent = signal.signal_explanation || 'No explanation provided';
+    
+    // Set default values
+    const suggestedQty = Math.floor(signal.position_size / signal.entry_price);
+    document.getElementById('manualQuantity').value = suggestedQty;
+    document.getElementById('manualInvestment').value = signal.position_size;
+    
+    // Store signal data for approval
+    window.currentSignal = signal;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('signalApprovalModal'));
+    modal.show();
+    
+    // Auto-reject after 5 minutes
+    setTimeout(() => {
+        modal.hide();
+        showToast('Signal approval timeout - automatically rejected', 'warning');
+    }, 300000);
+}
+
+// Auto Refresh Functions
+function startAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+    
+    autoRefreshInterval = setInterval(() => {
+        if (isAutoRefreshEnabled) {
+            requestCurrentData();
+        }
+    }, 5000); // Refresh every 5 seconds
+}
+
+function toggleAutoRefresh() {
+    isAutoRefreshEnabled = !isAutoRefreshEnabled;
+    const btn = document.getElementById('autoRefreshBtn');
+    
+    if (isAutoRefreshEnabled) {
+        btn.classList.add('btn-outline-success');
+        btn.classList.remove('btn-outline-secondary');
+        btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Auto Refresh';
+        showToast('Auto refresh enabled', 'success');
+    } else {
+        btn.classList.remove('btn-outline-success');
+        btn.classList.add('btn-outline-secondary');
+        btn.innerHTML = '<i class="fas fa-pause me-1"></i>Paused';
+        showToast('Auto refresh paused', 'info');
+    }
+}
+
+// Action Functions
+function refreshPositions() {
+    showLoading();
+    requestCurrentData();
+    hideLoading();
+    showToast('Positions refreshed', 'success');
+}
+
+function closePosition(symbol) {
+    if (confirm(`Are you sure you want to close the ${symbol} position?`)) {
+        showLoading();
+        
+        // Make API call to close position
+        fetch('/api/close-position', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ symbol: symbol })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                showToast(`${symbol} position closed successfully`, 'success');
+                requestCurrentData();
+            } else {
+                showToast(`Failed to close ${symbol} position: ${data.error}`, 'error');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showToast('Error closing position', 'error');
+            // Error occurred
+        });
+    }
+}
+
+function toggleScanner() {
+    const statusElement = document.getElementById('scannerStatus');
+    const btnElement = document.getElementById('pauseScannerBtn');
+    const isActive = statusElement.textContent.includes('Active');
+    
+    showLoading();
+    
+    // Make API call to toggle scanner
+    fetch('/api/toggle-scanner', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action: isActive ? 'pause' : 'resume' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            if (isActive) {
+                statusElement.innerHTML = '<i class="fas fa-circle me-1"></i>Paused';
+                statusElement.className = 'badge bg-warning me-3';
+                btnElement.innerHTML = '<i class="fas fa-play me-1"></i>Resume';
+                showToast('Scanner paused', 'warning');
+            } else {
+                statusElement.innerHTML = '<i class="fas fa-circle me-1"></i>Active';
+                statusElement.className = 'badge bg-success me-3';
+                btnElement.innerHTML = '<i class="fas fa-pause me-1"></i>Pause';
+                showToast('Scanner resumed', 'success');
+            }
+        } else {
+            showToast('Failed to toggle scanner', 'error');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showToast('Error toggling scanner', 'error');
+        // Error occurred
+    });
+}
+
+function scanNow() {
+    showLoading();
+    
+    fetch('/api/scan-now', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            showToast('Manual scan initiated', 'success');
+            document.getElementById('lastScanTime').textContent = new Date().toLocaleTimeString();
+        } else {
+            showToast('Failed to initiate scan', 'error');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showToast('Error initiating scan', 'error');
+        // Error occurred
+    });
+}
+
+function approveSignal() {
+    if (!window.currentSignal) return;
+    
+    const quantity = parseInt(document.getElementById('manualQuantity').value);
+    const investment = parseFloat(document.getElementById('manualInvestment').value);
+    
+    showLoading();
+    
+    fetch('/api/approve-signal', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            signal_id: window.currentSignal.signal_id,
+            quantity: quantity,
+            investment: investment,
+            action: 'approve'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            showToast('Signal approved and executed', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('signalApprovalModal')).hide();
+            requestCurrentData();
+        } else {
+            showToast('Failed to approve signal: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showToast('Error approving signal', 'error');
+        // Error occurred
+    });
+}
+
+function modifySignal() {
+    // Implementation for signal modification
+    showToast('Signal modification not yet implemented', 'info');
+}
+
+// Data Request Functions
+function requestInitialData() {
+    if (typeof websocket !== 'undefined' && websocket.readyState === WebSocket.OPEN) {
+        websocket.send(JSON.stringify({
+            type: 'request_status'
+        }));
+        
+        websocket.send(JSON.stringify({
+            type: 'request_performance'
+        }));
+    }
+}
+
+function requestCurrentData() {
+    requestInitialData();
+}
+
+// Update System Status
+function updateSystemStatus(data) {
+    // Update system status badge
+    const systemStatus = document.getElementById('systemStatus');
+    if (data.system_healthy) {
+        systemStatus.textContent = 'System Online';
+        systemStatus.className = 'badge bg-success';
+    } else {
+        systemStatus.textContent = 'System Issues';
+        systemStatus.className = 'badge bg-danger';
+    }
+    
+    // Update component health in sidebar
+    if (data.component_health) {
+        updateComponentHealth(data.component_health);
+    }
+    
+    // Update trading mode
+    window.tradingMode = data.trading_mode;
+    document.getElementById('modeToggleText').textContent = `Mode: ${data.trading_mode}`;
+    
+    // Update scanner metrics
+    document.getElementById('companiesScanned').textContent = data.companies_scanned || 0;
+    document.getElementById('gapsFound').textContent = data.gaps_found || 0;
+    document.getElementById('qualifiedSignals').textContent = data.qualified_signals || 0;
+}
+
+// Update Trade Status
+function updateTradeStatus(data) {
+    // This function will handle trade execution updates
+    // Trade update received
+}
+</script>
+{% endblock %}

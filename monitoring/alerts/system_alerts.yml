@@ -1,0 +1,389 @@
+# System-level alert rules for Earnings Gap Trading System
+groups:
+  - name: system_health
+    rules:
+      # Instance availability
+      - alert: InstanceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: system
+          service: infrastructure
+        annotations:
+          summary: "Instance {{ $labels.instance }} is down"
+          description: "{{ $labels.instance }} has been down for more than 1 minute"
+
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+          service: compute
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value }}% for 5 minutes"
+          current_value: "{{ $value }}%"
+          threshold: "80%"
+
+      - alert: CriticalCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+          category: system
+          service: compute
+        annotations:
+          summary: "Critical CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value }}% for 2 minutes"
+
+      # Memory usage
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+          service: memory
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value }}%"
+          current_value: "{{ $value }}%"
+          threshold: "85%"
+
+      - alert: CriticalMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 95
+        for: 1m
+        labels:
+          severity: critical
+          category: system
+          service: memory
+        annotations:
+          summary: "Critical memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value }}%"
+
+      # Disk space
+      - alert: DiskSpaceWarning
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+          service: storage
+        annotations:
+          summary: "Disk space warning on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value }}% on {{ $labels.mountpoint }}"
+          current_value: "{{ $value }}%"
+          threshold: "80%"
+
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 90
+        for: 1m
+        labels:
+          severity: critical
+          category: system
+          service: storage
+        annotations:
+          summary: "Critical disk space on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value }}% on {{ $labels.mountpoint }}"
+
+      # Disk I/O
+      - alert: HighDiskIOWait
+        expr: rate(node_cpu_seconds_total{mode="iowait"}[5m]) * 100 > 20
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+          service: storage
+        annotations:
+          summary: "High disk I/O wait on {{ $labels.instance }}"
+          description: "I/O wait is {{ $value }}%"
+
+      # Network
+      - alert: HighNetworkTraffic
+        expr: rate(node_network_receive_bytes_total[5m]) + rate(node_network_transmit_bytes_total[5m]) > 100000000
+        for: 10m
+        labels:
+          severity: warning
+          category: system
+          service: network
+        annotations:
+          summary: "High network traffic on {{ $labels.instance }}"
+          description: "Network traffic is {{ $value }} bytes/second"
+
+      # Load average
+      - alert: HighLoadAverage
+        expr: node_load5 > 2
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+          service: compute
+        annotations:
+          summary: "High load average on {{ $labels.instance }}"
+          description: "5-minute load average is {{ $value }}"
+
+  - name: database_health
+    rules:
+      # PostgreSQL specific alerts
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 30s
+        labels:
+          severity: critical
+          category: system
+          service: database
+        annotations:
+          summary: "PostgreSQL is down on {{ $labels.instance }}"
+          description: "PostgreSQL database is not responding"
+
+      - alert: PostgreSQLTooManyConnections
+        expr: pg_stat_activity_count > 50
+        for: 2m
+        labels:
+          severity: warning
+          category: system
+          service: database
+        annotations:
+          summary: "Too many PostgreSQL connections"
+          description: "{{ $value }} active connections (threshold: 50)"
+
+      - alert: PostgreSQLSlowQueries
+        expr: pg_stat_activity_max_tx_duration > 300
+        for: 2m
+        labels:
+          severity: warning
+          category: system
+          service: database
+        annotations:
+          summary: "Slow PostgreSQL queries detected"
+          description: "Longest running query duration is {{ $value }} seconds"
+
+      - alert: PostgreSQLHighCacheHitRatio
+        expr: pg_stat_database_blks_hit / (pg_stat_database_blks_hit + pg_stat_database_blks_read) < 0.95
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+          service: database
+        annotations:
+          summary: "Low PostgreSQL cache hit ratio"
+          description: "Cache hit ratio is {{ $value }}"
+
+      - alert: PostgreSQLDatabaseSize
+        expr: pg_database_size_bytes / 1024 / 1024 / 1024 > 10
+        for: 0s
+        labels:
+          severity: warning
+          category: system
+          service: database
+        annotations:
+          summary: "Large PostgreSQL database size"
+          description: "Database size is {{ $value }}GB"
+
+  - name: redis_health
+    rules:
+      # Redis specific alerts
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 30s
+        labels:
+          severity: critical
+          category: system
+          service: cache
+        annotations:
+          summary: "Redis is down on {{ $labels.instance }}"
+          description: "Redis server is not responding"
+
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+          service: cache
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is {{ $value }}%"
+
+      - alert: RedisSlowQueries
+        expr: redis_slowlog_length > 10
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+          service: cache
+        annotations:
+          summary: "Redis slow queries detected"
+          description: "{{ $value }} slow queries in Redis"
+
+      - alert: RedisTooManyConnections
+        expr: redis_connected_clients > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+          service: cache
+        annotations:
+          summary: "Too many Redis connections"
+          description: "{{ $value }} connected clients (threshold: 100)"
+
+  - name: web_server_health
+    rules:
+      # Nginx specific alerts
+      - alert: NginxDown
+        expr: nginx_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: system
+          service: web-server
+        annotations:
+          summary: "Nginx is down on {{ $labels.instance }}"
+          description: "Nginx web server is not responding"
+
+      - alert: NginxHighRequestRate
+        expr: rate(nginx_http_requests_total[5m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+          service: web-server
+        annotations:
+          summary: "High Nginx request rate"
+          description: "Request rate is {{ $value }} requests/second"
+
+      - alert: NginxHighErrorRate
+        expr: rate(nginx_http_requests_total{status=~"4.*|5.*"}[5m]) / rate(nginx_http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          category: system
+          service: web-server
+        annotations:
+          summary: "High Nginx error rate"
+          description: "Error rate is {{ $value }}%"
+
+  - name: container_health
+    rules:
+      # Docker container alerts
+      - alert: ContainerDown
+        expr: absent(container_last_seen{name!=""})
+        for: 1m
+        labels:
+          severity: warning
+          category: system
+          service: container
+        annotations:
+          summary: "Container {{ $labels.name }} is down"
+          description: "Container has been down for more than 1 minute"
+
+      - alert: ContainerHighCPU
+        expr: rate(container_cpu_usage_seconds_total{name!=""}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+          service: container
+        annotations:
+          summary: "High CPU usage in container {{ $labels.name }}"
+          description: "CPU usage is {{ $value }}%"
+
+      - alert: ContainerHighMemory
+        expr: container_memory_usage_bytes{name!=""} / container_spec_memory_limit_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+          service: container
+        annotations:
+          summary: "High memory usage in container {{ $labels.name }}"
+          description: "Memory usage is {{ $value }}%"
+
+      - alert: ContainerOOMKilled
+        expr: increase(container_memory_oom_kill_total{name!=""}[5m]) > 0
+        for: 0s
+        labels:
+          severity: critical
+          category: system
+          service: container
+        annotations:
+          summary: "Container {{ $labels.name }} was OOM killed"
+          description: "Container was killed due to out of memory"
+
+  - name: ssl_certificates
+    rules:
+      # SSL certificate monitoring
+      - alert: SSLCertificateExpiringSoon
+        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 30
+        for: 0s
+        labels:
+          severity: warning
+          category: system
+          service: security
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate for {{ $labels.instance }} expires in {{ $value }} days"
+
+      - alert: SSLCertificateExpired
+        expr: probe_ssl_earliest_cert_expiry - time() <= 0
+        for: 0s
+        labels:
+          severity: critical
+          category: system
+          service: security
+        annotations:
+          summary: "SSL certificate expired"
+          description: "SSL certificate for {{ $labels.instance }} has expired"
+
+  - name: backup_monitoring
+    rules:
+      # Backup system alerts
+      - alert: BackupFailed
+        expr: backup_last_success_timestamp < time() - 86400
+        for: 0s
+        labels:
+          severity: critical
+          category: system
+          service: backup
+        annotations:
+          summary: "Backup system failure"
+          description: "No successful backup in the last 24 hours"
+
+      - alert: BackupAge
+        expr: time() - backup_last_success_timestamp > 172800
+        for: 0s
+        labels:
+          severity: warning
+          category: system
+          service: backup
+        annotations:
+          summary: "Backup is too old"
+          description: "Last successful backup was {{ $value }} seconds ago"
+
+  - name: log_monitoring
+    rules:
+      # Log-based alerts
+      - alert: HighErrorLogRate
+        expr: rate(log_messages_total{level="error"}[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          category: system
+          service: logging
+        annotations:
+          summary: "High error log rate"
+          description: "Error log rate is {{ $value }} errors/second"
+
+      - alert: CriticalErrorInLogs
+        expr: increase(log_messages_total{level="critical"}[5m]) > 0
+        for: 0s
+        labels:
+          severity: critical
+          category: system
+          service: logging
+        annotations:
+          summary: "Critical error in logs"
+          description: "{{ $value }} critical errors logged in the last 5 minutes"

@@ -1,0 +1,330 @@
+# Trading-specific alert rules for Earnings Gap Trading System
+groups:
+  - name: trading_system
+    rules:
+      # Critical trading alerts
+      - alert: TradingSystemDown
+        expr: up{job="earnings-gap-trader"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          category: trading
+          service: trading-engine
+        annotations:
+          summary: "Trading system is down"
+          description: "The main trading application has been down for more than 30 seconds"
+          runbook_url: "https://docs.trading-system.com/runbooks/trading-system-down"
+
+      - alert: HighLatencyTradingAPI
+        expr: histogram_quantile(0.95, rate(trading_api_request_duration_seconds_bucket[5m])) > 2
+        for: 2m
+        labels:
+          severity: critical
+          category: trading
+          service: api
+        annotations:
+          summary: "High latency in trading API"
+          description: "95th percentile latency is {{ $value }}s for 2 minutes"
+          current_value: "{{ $value }}s"
+          threshold: "2s"
+
+      - alert: TradingAPIErrorRate
+        expr: rate(trading_api_errors_total[5m]) > 0.1
+        for: 1m
+        labels:
+          severity: critical
+          category: trading
+          service: api
+        annotations:
+          summary: "High error rate in trading API"
+          description: "Trading API error rate is {{ $value }} errors/second"
+          current_value: "{{ $value }}"
+          threshold: "0.1"
+
+      - alert: OrderExecutionFailure
+        expr: rate(order_execution_failures_total[5m]) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          category: trading
+          service: order-engine
+        annotations:
+          summary: "High order execution failure rate"
+          description: "Order execution failure rate is {{ $value }} failures/second"
+
+      - alert: ZerodhaAPIDown
+        expr: zerodha_api_health_check == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: trading
+          service: external-api
+        annotations:
+          summary: "Zerodha API is unreachable"
+          description: "Cannot connect to Zerodha Kite API for trading operations"
+
+      - alert: DatabaseConnectionLoss
+        expr: database_connections_active == 0
+        for: 30s
+        labels:
+          severity: critical
+          category: trading
+          service: database
+        annotations:
+          summary: "Lost database connectivity"
+          description: "No active database connections available"
+
+      # Risk management alerts
+      - alert: DailyLossLimitApproaching
+        expr: daily_pnl < -8000 and daily_pnl > -10000
+        for: 0s
+        labels:
+          severity: warning
+          category: risk
+          service: risk-manager
+        annotations:
+          summary: "Daily loss limit approaching"
+          description: "Daily P&L is {{ $value }}, approaching the limit of -10000"
+          current_value: "{{ $value }}"
+          threshold: "-10000"
+
+      - alert: DailyLossLimitBreached
+        expr: daily_pnl <= -10000
+        for: 0s
+        labels:
+          severity: critical
+          category: risk
+          service: risk-manager
+        annotations:
+          summary: "Daily loss limit breached"
+          description: "Daily P&L is {{ $value }}, exceeding the limit of -10000"
+          current_value: "{{ $value }}"
+          threshold: "-10000"
+
+      - alert: MaxPositionsReached
+        expr: active_positions_count >= max_positions_limit
+        for: 0s
+        labels:
+          severity: warning
+          category: risk
+          service: risk-manager
+        annotations:
+          summary: "Maximum positions limit reached"
+          description: "Current positions: {{ $value }}, limit: {{ $labels.max_positions_limit }}"
+
+      - alert: HighPortfolioConcentration
+        expr: max_position_concentration > 0.20
+        for: 5m
+        labels:
+          severity: warning
+          category: risk
+          service: risk-manager
+        annotations:
+          summary: "High portfolio concentration detected"
+          description: "Single position represents {{ $value }}% of portfolio"
+          current_value: "{{ $value }}%"
+          threshold: "20%"
+
+      - alert: CircuitBreakerTriggered
+        expr: circuit_breaker_triggered == 1
+        for: 0s
+        labels:
+          severity: critical
+          category: risk
+          service: risk-manager
+        annotations:
+          summary: "Circuit breaker triggered"
+          description: "Trading circuit breaker has been activated due to rapid losses"
+
+      - alert: HighDrawdown
+        expr: current_drawdown > 0.15
+        for: 5m
+        labels:
+          severity: warning
+          category: risk
+          service: risk-manager
+        annotations:
+          summary: "High portfolio drawdown"
+          description: "Current drawdown is {{ $value }}%"
+          current_value: "{{ $value }}%"
+          threshold: "15%"
+
+      # Trading performance alerts
+      - alert: LowWinRate
+        expr: win_rate_7d < 0.40
+        for: 30m
+        labels:
+          severity: warning
+          category: trading
+          service: strategy
+        annotations:
+          summary: "Low win rate detected"
+          description: "7-day win rate is {{ $value }}%"
+          current_value: "{{ $value }}%"
+          threshold: "40%"
+
+      - alert: HighSlippage
+        expr: avg_slippage_5m > 0.005
+        for: 10m
+        labels:
+          severity: warning
+          category: trading
+          service: execution
+        annotations:
+          summary: "High execution slippage"
+          description: "Average slippage is {{ $value }}%"
+          current_value: "{{ $value }}%"
+          threshold: "0.5%"
+
+      - alert: GapDetectionDown
+        expr: gaps_detected_1h == 0 and market_hours == 1
+        for: 30m
+        labels:
+          severity: warning
+          category: trading
+          service: scanner
+        annotations:
+          summary: "No gaps detected during market hours"
+          description: "Gap detection may not be working properly"
+
+      - alert: StalePositionData
+        expr: time() - last_position_update_timestamp > 300
+        for: 0s
+        labels:
+          severity: warning
+          category: trading
+          service: portfolio
+        annotations:
+          summary: "Stale position data"
+          description: "Position data hasn't been updated for {{ $value }} seconds"
+
+      # External service alerts
+      - alert: TelegramBotDown
+        expr: telegram_bot_health_check == 0
+        for: 2m
+        labels:
+          severity: warning
+          category: trading
+          service: notifications
+        annotations:
+          summary: "Telegram bot is unreachable"
+          description: "Cannot send notifications via Telegram"
+
+      - alert: MarketDataStale
+        expr: time() - last_market_data_update > 60 and market_hours == 1
+        for: 1m
+        labels:
+          severity: warning
+          category: trading
+          service: market-data
+        annotations:
+          summary: "Stale market data"
+          description: "Market data hasn't been updated for {{ $value }} seconds during market hours"
+
+      # Order management alerts
+      - alert: PendingOrdersTimeout
+        expr: pending_orders_age_max > 3600
+        for: 0s
+        labels:
+          severity: warning
+          category: trading
+          service: orders
+        annotations:
+          summary: "Orders pending for too long"
+          description: "Some orders have been pending for more than 1 hour"
+
+      - alert: OrderRejectionRate
+        expr: rate(order_rejections_total[10m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: trading
+          service: orders
+        annotations:
+          summary: "High order rejection rate"
+          description: "Order rejection rate is {{ $value }} rejections/second"
+
+      # Strategy-specific alerts
+      - alert: LowConfidenceSignals
+        expr: avg_signal_confidence_1h < 0.60
+        for: 15m
+        labels:
+          severity: warning
+          category: trading
+          service: strategy
+        annotations:
+          summary: "Low confidence trading signals"
+          description: "Average signal confidence is {{ $value }}%"
+
+      - alert: StrategyDrift
+        expr: abs(current_performance - expected_performance) > 0.05
+        for: 1h
+        labels:
+          severity: warning
+          category: trading
+          service: strategy
+        annotations:
+          summary: "Strategy performance drift detected"
+          description: "Performance differs from expected by {{ $value }}%"
+
+  - name: trading_timing
+    rules:
+      # Market timing alerts
+      - alert: PreMarketTradingActive
+        expr: trading_active == 1 and market_hours == 0 and hour() < 9
+        for: 0s
+        labels:
+          severity: info
+          category: trading
+          service: scheduler
+        annotations:
+          summary: "Pre-market trading detected"
+          description: "Trading is active outside normal market hours"
+
+      - alert: AfterHoursTradingActive
+        expr: trading_active == 1 and market_hours == 0 and hour() > 15
+        for: 0s
+        labels:
+          severity: info
+          category: trading
+          service: scheduler
+        annotations:
+          summary: "After-hours trading detected"
+          description: "Trading is active after market close"
+
+      - alert: WeekendTradingActive
+        expr: trading_active == 1 and (day_of_week() == 0 or day_of_week() == 6)
+        for: 0s
+        labels:
+          severity: warning
+          category: trading
+          service: scheduler
+        annotations:
+          summary: "Weekend trading detected"
+          description: "Trading system is active during weekend"
+
+  - name: trading_recovery
+    rules:
+      # Recovery and health alerts
+      - alert: TradingSystemRecovered
+        expr: up{job="earnings-gap-trader"} == 1 and up{job="earnings-gap-trader"} offset 1m == 0
+        for: 0s
+        labels:
+          severity: info
+          category: trading
+          service: trading-engine
+        annotations:
+          summary: "Trading system has recovered"
+          description: "Trading system is back online after being down"
+
+      - alert: APILatencyImproved
+        expr: histogram_quantile(0.95, rate(trading_api_request_duration_seconds_bucket[5m])) < 1
+          and histogram_quantile(0.95, rate(trading_api_request_duration_seconds_bucket[5m]) offset 5m) > 2
+        for: 1m
+        labels:
+          severity: info
+          category: trading
+          service: api
+        annotations:
+          summary: "API latency has improved"
+          description: "Trading API latency has returned to normal levels"

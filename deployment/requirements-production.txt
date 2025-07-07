@@ -1,0 +1,236 @@
+# Production Requirements for Earnings Gap Trading System
+# Version-pinned dependencies for stability and security
+
+# Core Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Database
+sqlalchemy==2.0.23
+alembic==1.13.0
+psycopg2-binary==2.9.9
+asyncpg==0.29.0
+
+# Market Data & APIs
+yfinance==0.2.28
+requests==2.31.0
+aiohttp==3.9.1
+websockets==12.0
+
+# Trading & Finance
+numpy==1.25.2
+pandas==2.1.4
+scipy==1.11.4
+TA-Lib==0.4.28
+
+# Telegram Bot
+python-telegram-bot==20.7
+
+# Caching & Sessions
+redis==5.0.1
+aioredis==2.0.1
+
+# Security & Authentication
+cryptography==41.0.8
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+python-multipart==0.0.6
+
+# HTTP & Networking
+httpx==0.25.2
+urllib3==2.1.0
+certifi==2023.11.17
+
+# Data Validation & Serialization
+marshmallow==3.20.1
+jsonschema==4.20.0
+
+# Environment & Configuration
+python-dotenv==1.0.0
+click==8.1.7
+
+# Monitoring & Logging
+structlog==23.2.0
+sentry-sdk[fastapi]==1.38.0
+prometheus-client==0.19.0
+
+# Task Queue & Background Jobs
+celery[redis]==5.3.4
+flower==2.0.1
+
+# Date & Time
+python-dateutil==2.8.2
+pytz==2023.3.post1
+
+# Mathematical & Statistical
+statsmodels==0.14.0
+scikit-learn==1.3.2
+
+# Utilities
+backoff==2.2.1
+tenacity==8.2.3
+python-slugify==8.0.1
+
+# Development & Testing (for production debugging)
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-mock==3.12.0
+
+# Production Server
+gunicorn==21.2.0
+
+# System & Process Management
+psutil==5.9.6
+
+# Email (for alerts)
+aiosmtplib==3.0.1
+email-validator==2.1.0
+
+# File Handling
+openpyxl==3.1.2
+xlsxwriter==3.1.9
+
+# API Documentation
+swagger-ui-bundle==0.0.9
+
+# Template Engine
+jinja2==3.1.2
+
+# Static Files
+whitenoise==6.6.0
+
+# Timezone Support
+zoneinfo==0.2.1; python_version < "3.9"
+
+# Security Scanning (optional)
+safety==2.3.5
+bandit==1.7.5
+
+# Production Optimizations
+orjson==3.9.10  # Faster JSON parsing
+uvloop==0.19.0  # Faster event loop (Unix only)
+
+# Database Connection Pooling
+SQLAlchemy-Utils==0.41.1
+
+# Caching
+python-memcached==1.59
+
+# Rate Limiting
+slowapi==0.1.9
+
+# Health Checks
+healthcheck==1.3.3
+
+# Backup & Recovery
+boto3==1.34.0  # For S3 backups (optional)
+
+# Performance Monitoring
+py-spy==0.3.14
+
+# System Information
+distro==1.8.0
+
+# Configuration Management
+dynaconf==3.2.4
+
+# API Rate Limiting
+limits==3.6.0
+
+# WebSocket Support
+python-socketio==5.10.0
+
+# Time Series Data
+influxdb-client==1.38.0
+
+# Machine Learning (for signal enhancement)
+xgboost==2.0.2
+lightgbm==4.1.0
+
+# Financial Data Processing
+quantlib==1.32
+
+# Production Logging
+loguru==0.7.2
+
+# Process Management
+supervisor==4.2.5
+
+# System Health
+py-cpuinfo==9.0.0
+
+# Network Security
+dnspython==2.4.2
+
+# Production Database Migrations
+yoyo-migrations==8.2.0
+
+# Error Tracking
+rollbar==0.16.3
+
+# Performance Profiling
+line-profiler==4.1.1
+memory-profiler==0.61.0
+
+# API Testing (for production validation)
+tavern==2.6.1
+
+# Load Testing
+locust==2.17.0
+
+# Configuration Validation
+cerberus==1.3.5
+
+# Production Metrics
+statsd==4.0.1
+
+# Secret Management
+keyring==24.3.0
+
+# Production Dependencies Verification
+pip-audit==2.6.1
+
+# System Dependencies for Financial Data
+lxml==4.9.3
+beautifulsoup4==4.12.2
+
+# Additional Security
+argon2-cffi==23.1.0
+
+# Production File Handling
+pathlib2==2.3.7.post1
+
+# High-Performance Computing
+numba==0.58.1
+
+# Production Caching
+diskcache==5.6.3
+
+# API Client Libraries
+kiteconnect==4.2.0  # Zerodha Kite Connect
+
+# Production Monitoring
+newrelic==9.2.0
+
+# System Resource Monitoring
+docker==6.1.3
+
+# Production Security Headers
+secure==0.3.0
+
+# API Versioning
+apispec==6.3.0
+
+# Production Asset Management
+webassets==2.0
+
+# Database Performance
+pg_activity==3.4.2
+
+# Production Backup Tools
+duplicity==2.1.4
+
+# System Performance Tuning
+setproctitle==1.3.3

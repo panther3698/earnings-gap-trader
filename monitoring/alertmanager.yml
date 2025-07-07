@@ -1,0 +1,272 @@
+# Alertmanager configuration for Earnings Gap Trading System
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@trading-system.com'
+  smtp_auth_username: 'alerts@trading-system.com'
+  smtp_auth_password: 'smtp_password'
+  smtp_require_tls: true
+
+# Template files
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Routing configuration
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'default'
+  routes:
+    # Critical trading alerts - immediate notification
+    - match:
+        severity: critical
+        category: trading
+      receiver: 'trading-critical'
+      group_wait: 0s
+      repeat_interval: 5m
+
+    # System critical alerts
+    - match:
+        severity: critical
+        category: system
+      receiver: 'system-critical'
+      group_wait: 30s
+      repeat_interval: 15m
+
+    # Risk management alerts
+    - match:
+        severity: warning
+        category: risk
+      receiver: 'risk-warnings'
+      group_wait: 1m
+      repeat_interval: 30m
+
+    # Trading warnings
+    - match:
+        severity: warning
+        category: trading
+      receiver: 'trading-warnings'
+      group_wait: 2m
+      repeat_interval: 1h
+
+    # System warnings
+    - match:
+        severity: warning
+        category: system
+      receiver: 'system-warnings'
+      group_wait: 5m
+      repeat_interval: 2h
+
+    # Information alerts
+    - match:
+        severity: info
+      receiver: 'info-alerts'
+      group_wait: 10m
+      repeat_interval: 24h
+
+# Receivers configuration
+receivers:
+  # Default receiver
+  - name: 'default'
+    email_configs:
+      - to: 'admin@trading-system.com'
+        subject: '[TRADING ALERT] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Instance: {{ .Labels.instance }}
+          Severity: {{ .Labels.severity }}
+          Time: {{ .StartsAt }}
+          {{ end }}
+
+  # Critical trading alerts
+  - name: 'trading-critical'
+    email_configs:
+      - to: 'trader@trading-system.com,admin@trading-system.com'
+        subject: '🚨 CRITICAL TRADING ALERT: {{ .GroupLabels.alertname }}'
+        html: |
+          <h2 style="color: red;">🚨 CRITICAL TRADING ALERT</h2>
+          {{ range .Alerts }}
+          <div style="border: 2px solid red; padding: 10px; margin: 10px;">
+            <h3>{{ .Annotations.summary }}</h3>
+            <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+            <p><strong>Instance:</strong> {{ .Labels.instance }}</p>
+            <p><strong>Severity:</strong> {{ .Labels.severity }}</p>
+            <p><strong>Time:</strong> {{ .StartsAt }}</p>
+            {{ if .Annotations.runbook_url }}
+            <p><strong>Runbook:</strong> <a href="{{ .Annotations.runbook_url }}">{{ .Annotations.runbook_url }}</a></p>
+            {{ end }}
+          </div>
+          {{ end }}
+    telegram_configs:
+      - bot_token: '${TELEGRAM_BOT_TOKEN}'
+        chat_id: ${TELEGRAM_EMERGENCY_CHAT_ID}
+        message: |
+          🚨 *CRITICAL TRADING ALERT*
+          
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Instance:* {{ .Labels.instance }}
+          *Severity:* {{ .Labels.severity }}
+          *Time:* {{ .StartsAt }}
+          {{ end }}
+        parse_mode: 'Markdown'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#trading-alerts'
+        color: 'danger'
+        title: '🚨 CRITICAL TRADING ALERT'
+        text: |
+          {{ range .Alerts }}
+          *{{ .Annotations.summary }}*
+          {{ .Annotations.description }}
+          Instance: {{ .Labels.instance }}
+          {{ end }}
+    pagerduty_configs:
+      - routing_key: '${PAGERDUTY_ROUTING_KEY}'
+        description: 'Critical trading system alert'
+        severity: 'critical'
+
+  # System critical alerts
+  - name: 'system-critical'
+    email_configs:
+      - to: 'sysadmin@trading-system.com,admin@trading-system.com'
+        subject: '🔥 CRITICAL SYSTEM ALERT: {{ .GroupLabels.alertname }}'
+        html: |
+          <h2 style="color: red;">🔥 CRITICAL SYSTEM ALERT</h2>
+          {{ range .Alerts }}
+          <div style="border: 2px solid red; padding: 10px; margin: 10px;">
+            <h3>{{ .Annotations.summary }}</h3>
+            <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+            <p><strong>Instance:</strong> {{ .Labels.instance }}</p>
+            <p><strong>Time:</strong> {{ .StartsAt }}</p>
+          </div>
+          {{ end }}
+    telegram_configs:
+      - bot_token: '${TELEGRAM_BOT_TOKEN}'
+        chat_id: ${TELEGRAM_ADMIN_CHAT_ID}
+        message: |
+          🔥 *CRITICAL SYSTEM ALERT*
+          
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Instance:* {{ .Labels.instance }}
+          *Time:* {{ .StartsAt }}
+          {{ end }}
+        parse_mode: 'Markdown'
+
+  # Risk management warnings
+  - name: 'risk-warnings'
+    email_configs:
+      - to: 'risk@trading-system.com,trader@trading-system.com'
+        subject: '⚠️ RISK ALERT: {{ .GroupLabels.alertname }}'
+        html: |
+          <h2 style="color: orange;">⚠️ RISK MANAGEMENT ALERT</h2>
+          {{ range .Alerts }}
+          <div style="border: 2px solid orange; padding: 10px; margin: 10px;">
+            <h3>{{ .Annotations.summary }}</h3>
+            <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+            <p><strong>Current Value:</strong> {{ .Annotations.current_value }}</p>
+            <p><strong>Threshold:</strong> {{ .Annotations.threshold }}</p>
+            <p><strong>Instance:</strong> {{ .Labels.instance }}</p>
+            <p><strong>Time:</strong> {{ .StartsAt }}</p>
+          </div>
+          {{ end }}
+    telegram_configs:
+      - bot_token: '${TELEGRAM_BOT_TOKEN}'
+        chat_id: ${TELEGRAM_TRADING_CHAT_ID}
+        message: |
+          ⚠️ *RISK MANAGEMENT ALERT*
+          
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Current Value:* {{ .Annotations.current_value }}
+          *Threshold:* {{ .Annotations.threshold }}
+          *Time:* {{ .StartsAt }}
+          {{ end }}
+        parse_mode: 'Markdown'
+
+  # Trading warnings
+  - name: 'trading-warnings'
+    email_configs:
+      - to: 'trader@trading-system.com'
+        subject: '⚠️ Trading Warning: {{ .GroupLabels.alertname }}'
+    telegram_configs:
+      - bot_token: '${TELEGRAM_BOT_TOKEN}'
+        chat_id: ${TELEGRAM_TRADING_CHAT_ID}
+        message: |
+          ⚠️ *Trading Warning*
+          
+          {{ range .Alerts }}
+          *{{ .Annotations.summary }}*
+          {{ .Annotations.description }}
+          {{ end }}
+        parse_mode: 'Markdown'
+
+  # System warnings
+  - name: 'system-warnings'
+    email_configs:
+      - to: 'sysadmin@trading-system.com'
+        subject: '⚠️ System Warning: {{ .GroupLabels.alertname }}'
+
+  # Information alerts
+  - name: 'info-alerts'
+    email_configs:
+      - to: 'logs@trading-system.com'
+        subject: 'ℹ️ Info: {{ .GroupLabels.alertname }}'
+
+# Inhibition rules
+inhibit_rules:
+  # Inhibit info alerts when warning alerts are firing
+  - source_match:
+      severity: 'warning'
+    target_match:
+      severity: 'info'
+    equal: ['alertname', 'instance']
+
+  # Inhibit warning alerts when critical alerts are firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+
+  # Inhibit system alerts when trading system is down
+  - source_match:
+      alertname: 'TradingSystemDown'
+    target_match_re:
+      alertname: 'Database.*|Redis.*|API.*'
+    equal: ['instance']
+
+# Mute rules
+mute_time_intervals:
+  - name: 'maintenance-window'
+    time_intervals:
+      - times:
+        - start_time: '02:00'
+          end_time: '04:00'
+        weekdays: ['sunday']
+        months: ['1:12']
+
+  - name: 'non-trading-hours'
+    time_intervals:
+      - times:
+        - start_time: '15:30'
+          end_time: '09:15'
+        weekdays: ['monday:friday']
+
+# Global configuration
+global_config:
+  resolve_timeout: 5m
+  http_config:
+    follow_redirects: true
+  smtp_hello: 'localhost'
+  smtp_require_tls: true
+  pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+  slack_api_url: 'https://slack.com/api/chat.postMessage'
+  telegram_api_url: 'https://api.telegram.org'

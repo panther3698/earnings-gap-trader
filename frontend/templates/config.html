@@ -1,0 +1,981 @@
+{% extends "base.html" %}
+
+{% block title %}Configuration - Earnings Gap Trader{% endblock %}
+
+{% block content %}
+<!-- Configuration Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-cog me-2 text-primary"></i>
+                    System Configuration
+                </h4>
+                <p class="text-muted mb-0">Configure trading parameters, API settings, and system preferences</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration Tabs -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="configTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="api-tab" data-bs-toggle="tab" data-bs-target="#api-config" type="button" role="tab">
+                            <i class="fas fa-key me-1"></i>
+                            API Configuration
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="trading-tab" data-bs-toggle="tab" data-bs-target="#trading-config" type="button" role="tab">
+                            <i class="fas fa-chart-line me-1"></i>
+                            Trading Parameters
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="risk-tab" data-bs-toggle="tab" data-bs-target="#risk-config" type="button" role="tab">
+                            <i class="fas fa-shield-alt me-1"></i>
+                            Risk Management
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="telegram-tab" data-bs-toggle="tab" data-bs-target="#telegram-config" type="button" role="tab">
+                            <i class="fab fa-telegram me-1"></i>
+                            Telegram Bot
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="scanner-tab" data-bs-toggle="tab" data-bs-target="#scanner-config" type="button" role="tab">
+                            <i class="fas fa-search me-1"></i>
+                            Scanner Settings
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="configTabContent">
+                    
+                    <!-- API Configuration Tab -->
+                    <div class="tab-pane fade show active" id="api-config" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5 class="mb-3">Zerodha Kite Connect API</h5>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="apiKey" class="form-label">API Key</label>
+                                        <input type="text" class="form-control" id="apiKey" placeholder="Enter your Zerodha API key">
+                                        <div class="form-text">Get this from your Kite Connect app</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="apiSecret" class="form-label">API Secret</label>
+                                        <input type="password" class="form-control" id="apiSecret" placeholder="Enter your API secret">
+                                        <div class="form-text">Keep this secure and never share</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="requestToken" class="form-label">Request Token</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="requestToken" placeholder="Paste request token from Kite login">
+                                        <button class="btn btn-outline-primary" type="button" id="generateToken">
+                                            <i class="fas fa-key me-1"></i>
+                                            Generate Access Token
+                                        </button>
+                                    </div>
+                                    <div class="form-text">Get request token from Kite login, then generate access token</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="accessToken" class="form-label">Access Token</label>
+                                    <input type="text" class="form-control" id="accessToken" placeholder="Will be generated automatically" readonly>
+                                    <div class="form-text">This will be automatically filled when you generate from request token</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="paperTrading" checked>
+                                        <label class="form-check-label" for="paperTrading">
+                                            Paper Trading Mode
+                                        </label>
+                                    </div>
+                                    <div class="form-text">Enable for testing without real money</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <button class="btn btn-primary" id="testConnection">
+                                        <i class="fas fa-plug me-1"></i>
+                                        Test Connection
+                                    </button>
+                                    <span class="badge bg-secondary ms-2" id="connectionStatus">Not Connected</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Setup Guide
+                                        </h6>
+                                        <ol class="mb-0 small">
+                                            <li>Login to Kite Connect Developer Console</li>
+                                            <li>Create a new app or use existing one</li>
+                                            <li>Copy the API Key and Secret</li>
+                                            <li>Set redirect URL to: <code>http://localhost:8001/auth</code></li>
+                                            <li>Visit your app URL to get request token</li>
+                                            <li>Paste request token and click Generate Access Token</li>
+                                            <li>Test the connection</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Trading Parameters Tab -->
+                    <div class="tab-pane fade" id="trading-config" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5 class="mb-3">Trading Parameters</h5>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="portfolioValue" class="form-label">Portfolio Value (₹)</label>
+                                        <input type="number" class="form-control" id="portfolioValue" value="100000" min="10000" step="1000">
+                                        <div class="form-text">Total capital available for trading</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="maxPositions" class="form-label">Max Concurrent Positions</label>
+                                        <input type="number" class="form-control" id="maxPositions" value="5" min="1" max="20">
+                                        <div class="form-text">Maximum number of open positions</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="positionSizePercent" class="form-label">Position Size (%)</label>
+                                        <input type="number" class="form-control" id="positionSizePercent" value="5.0" min="1.0" max="20.0" step="0.5">
+                                        <div class="form-text">Default position size as % of portfolio</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="stopLossPercent" class="form-label">Stop Loss (%)</label>
+                                        <input type="number" class="form-control" id="stopLossPercent" value="3.0" min="1.0" max="10.0" step="0.5">
+                                        <div class="form-text">Default stop loss percentage</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="profitTargetPercent" class="form-label">Profit Target (%)</label>
+                                        <input type="number" class="form-control" id="profitTargetPercent" value="6.0" min="2.0" max="20.0" step="0.5">
+                                        <div class="form-text">Default profit target percentage</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="tradingMode" class="form-label">Trading Mode</label>
+                                        <select class="form-select" id="tradingMode">
+                                            <option value="MANUAL">Manual (Require approval)</option>
+                                            <option value="AUTO">Automatic</option>
+                                            <option value="PAUSED">Paused</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="marketOpenTime" class="form-label">Market Open Time</label>
+                                        <input type="time" class="form-control" id="marketOpenTime" value="09:15">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="marketCloseTime" class="form-label">Market Close Time</label>
+                                        <input type="time" class="form-control" id="marketCloseTime" value="15:30">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <i class="fas fa-lightbulb me-1"></i>
+                                            Recommendations
+                                        </h6>
+                                        <ul class="mb-0 small">
+                                            <li><strong>Position Size:</strong> Start with 2-5% for safety</li>
+                                            <li><strong>Stop Loss:</strong> Keep tight (2-4%) for gap trades</li>
+                                            <li><strong>Profit Target:</strong> 1.5-2x risk is reasonable</li>
+                                            <li><strong>Max Positions:</strong> Limit to 3-5 for better management</li>
+                                            <li><strong>Trading Mode:</strong> Use Manual until confident</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Risk Management Tab -->
+                    <div class="tab-pane fade" id="risk-config" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5 class="mb-3">Risk Management</h5>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="dailyLossLimit" class="form-label">Daily Loss Limit (₹)</label>
+                                        <input type="number" class="form-control" id="dailyLossLimit" value="5000" min="1000" step="500">
+                                        <div class="form-text">Stop trading if daily loss exceeds this</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="weeklyLossLimit" class="form-label">Weekly Loss Limit (₹)</label>
+                                        <input type="number" class="form-control" id="weeklyLossLimit" value="15000" min="3000" step="1000">
+                                        <div class="form-text">Stop trading if weekly loss exceeds this</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="maxDrawdown" class="form-label">Max Drawdown (%)</label>
+                                        <input type="number" class="form-control" id="maxDrawdown" value="10.0" min="5.0" max="25.0" step="1.0">
+                                        <div class="form-text">Max allowed portfolio drawdown</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="maxPositionSize" class="form-label">Max Position Size (₹)</label>
+                                        <input type="number" class="form-control" id="maxPositionSize" value="50000" min="10000" step="5000">
+                                        <div class="form-text">Maximum amount per single position</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="correlationLimit" class="form-label">Correlation Limit (%)</label>
+                                        <input type="number" class="form-control" id="correlationLimit" value="60.0" min="30.0" max="90.0" step="5.0">
+                                        <div class="form-text">Max correlation between positions</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="volatilityThreshold" class="form-label">Volatility Threshold</label>
+                                        <input type="number" class="form-control" id="volatilityThreshold" value="25.0" min="15.0" max="40.0" step="2.5">
+                                        <div class="form-text">VIX level to reduce position sizes</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="emergencyStopEnabled" checked>
+                                        <label class="form-check-label" for="emergencyStopEnabled">
+                                            Enable Emergency Stop
+                                        </label>
+                                    </div>
+                                    <div class="form-text">Automatically stop trading on extreme losses</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="riskAlertsEnabled" checked>
+                                        <label class="form-check-label" for="riskAlertsEnabled">
+                                            Enable Risk Alerts
+                                        </label>
+                                    </div>
+                                    <div class="form-text">Send notifications when approaching limits</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card bg-warning bg-opacity-10 border-warning">
+                                    <div class="card-body">
+                                        <h6 class="card-title text-warning">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                            Risk Warning
+                                        </h6>
+                                        <p class="mb-2 small">Set conservative limits when starting:</p>
+                                        <ul class="mb-0 small">
+                                            <li>Daily loss: 2-5% of portfolio</li>
+                                            <li>Drawdown: Max 10-15%</li>
+                                            <li>Position size: Never exceed 10%</li>
+                                            <li>Always enable emergency stop</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Telegram Bot Tab -->
+                    <div class="tab-pane fade" id="telegram-config" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5 class="mb-3">Telegram Bot Configuration</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="botToken" class="form-label">Bot Token</label>
+                                    <input type="password" class="form-control" id="botToken" placeholder="Enter bot token from BotFather">
+                                    <div class="form-text">Get this from @BotFather on Telegram</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="authorizedChats" class="form-label">Authorized Chat IDs</label>
+                                    <textarea class="form-control" id="authorizedChats" rows="3" placeholder="Enter chat IDs, one per line"></textarea>
+                                    <div class="form-text">Only these chat IDs can control the bot</div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="approvalTimeout" class="form-label">Approval Timeout (minutes)</label>
+                                        <input type="number" class="form-control" id="approvalTimeout" value="5" min="1" max="30">
+                                        <div class="form-text">Time to wait for signal approval</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="maxRetries" class="form-label">Max Retries</label>
+                                        <input type="number" class="form-control" id="maxRetries" value="3" min="1" max="10">
+                                        <div class="form-text">Max retry attempts for failed messages</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enableSignalNotifications" checked>
+                                        <label class="form-check-label" for="enableSignalNotifications">
+                                            Enable Signal Notifications
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enableTradeNotifications" checked>
+                                        <label class="form-check-label" for="enableTradeNotifications">
+                                            Enable Trade Notifications
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enableRiskAlerts" checked>
+                                        <label class="form-check-label" for="enableRiskAlerts">
+                                            Enable Risk Alerts
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <button class="btn btn-primary" id="testTelegram">
+                                        <i class="fab fa-telegram me-1"></i>
+                                        Test Bot
+                                    </button>
+                                    <span class="badge bg-secondary ms-2" id="telegramStatus">Not Connected</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <i class="fab fa-telegram me-1"></i>
+                                            Bot Setup
+                                        </h6>
+                                        <ol class="mb-3 small">
+                                            <li>Message @BotFather on Telegram</li>
+                                            <li>Send <code>/newbot</code> command</li>
+                                            <li>Choose a name and username</li>
+                                            <li>Copy the bot token</li>
+                                            <li>Get your chat ID from @userinfobot</li>
+                                            <li>Test the connection</li>
+                                        </ol>
+                                        
+                                        <h6 class="card-title">Available Commands</h6>
+                                        <ul class="mb-0 small">
+                                            <li><code>/status</code> - System status</li>
+                                            <li><code>/pnl</code> - P&L summary</li>
+                                            <li><code>/mode</code> - Change trading mode</li>
+                                            <li><code>/pause</code> - Pause trading</li>
+                                            <li><code>/resume</code> - Resume trading</li>
+                                            <li><code>/stop</code> - Emergency stop</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Scanner Settings Tab -->
+                    <div class="tab-pane fade" id="scanner-config" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5 class="mb-3">Earnings Gap Scanner</h5>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="minGapPercent" class="form-label">Minimum Gap (%)</label>
+                                        <input type="number" class="form-control" id="minGapPercent" value="3.0" min="1.0" max="10.0" step="0.5">
+                                        <div class="form-text">Minimum gap percentage to trigger</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="minVolumeRatio" class="form-label">Minimum Volume Ratio</label>
+                                        <input type="number" class="form-control" id="minVolumeRatio" value="2.0" min="1.5" max="10.0" step="0.5">
+                                        <div class="form-text">Volume must be X times higher than average</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="minMarketCap" class="form-label">Minimum Market Cap (₹ Cr)</label>
+                                        <input type="number" class="form-control" id="minMarketCap" value="1000" min="500" step="100">
+                                        <div class="form-text">Only scan stocks above this market cap</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="maxMarketCap" class="form-label">Maximum Market Cap (₹ Cr)</label>
+                                        <input type="number" class="form-control" id="maxMarketCap" value="500000" min="10000" step="5000">
+                                        <div class="form-text">Only scan stocks below this market cap</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="scanInterval" class="form-label">Scan Interval (minutes)</label>
+                                        <input type="number" class="form-control" id="scanInterval" value="15" min="5" max="60" step="5">
+                                        <div class="form-text">How often to scan for new signals</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="confidenceThreshold" class="form-label">Confidence Threshold (%)</label>
+                                        <input type="number" class="form-control" id="confidenceThreshold" value="70" min="50" max="95" step="5">
+                                        <div class="form-text">Minimum confidence to generate signal</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="excludedSymbols" class="form-label">Excluded Symbols</label>
+                                    <textarea class="form-control" id="excludedSymbols" rows="3" placeholder="Enter symbols to exclude, separated by commas"></textarea>
+                                    <div class="form-text">Symbols to exclude from scanning (e.g., YESBANK, SUZLON)</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enablePreMarketScan" checked>
+                                        <label class="form-check-label" for="enablePreMarketScan">
+                                            Enable Pre-market Scanning
+                                        </label>
+                                    </div>
+                                    <div class="form-text">Scan for gaps before market opens</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enableEarningsFilter" checked>
+                                        <label class="form-check-label" for="enableEarningsFilter">
+                                            Filter by Earnings Announcements
+                                        </label>
+                                    </div>
+                                    <div class="form-text">Only scan stocks with recent earnings</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <i class="fas fa-search me-1"></i>
+                                            Scanner Tips
+                                        </h6>
+                                        <ul class="mb-0 small">
+                                            <li><strong>Gap %:</strong> 3-5% gaps offer good risk/reward</li>
+                                            <li><strong>Volume:</strong> Higher volume = better signal</li>
+                                            <li><strong>Market Cap:</strong> Mid-cap stocks move more</li>
+                                            <li><strong>Confidence:</strong> 70%+ recommended</li>
+                                            <li><strong>Exclusions:</strong> Avoid penny stocks</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="card bg-info bg-opacity-10 border-info mt-3">
+                                    <div class="card-body">
+                                        <h6 class="card-title text-info">
+                                            <i class="fas fa-clock me-1"></i>
+                                            Scan Schedule
+                                        </h6>
+                                        <ul class="mb-0 small">
+                                            <li><strong>Pre-market:</strong> 7:00 - 9:15 AM</li>
+                                            <li><strong>Market hours:</strong> Every 15 minutes</li>
+                                            <li><strong>Post-market:</strong> 3:30 - 6:00 PM</li>
+                                            <li><strong>Earnings:</strong> After market close</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <button class="btn btn-primary btn-lg me-3" id="saveConfig">
+                    <i class="fas fa-save me-2"></i>
+                    Save Configuration
+                </button>
+                <button class="btn btn-outline-secondary btn-lg me-3" id="resetConfig">
+                    <i class="fas fa-undo me-2"></i>
+                    Reset to Defaults
+                </button>
+                <button class="btn btn-outline-info btn-lg" id="exportConfig">
+                    <i class="fas fa-download me-2"></i>
+                    Export Config
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Configuration Management
+document.addEventListener('DOMContentLoaded', function() {
+    loadConfiguration();
+    setupEventListeners();
+});
+
+// Load current configuration
+async function loadConfiguration() {
+    try {
+        showLoading();
+        const response = await fetch('/api/config');
+        const config = await response.json();
+        
+        if (config.success) {
+            populateForm(config.data);
+            showToast('Configuration loaded', 'success');
+        } else {
+            showToast('Failed to load configuration', 'error');
+        }
+    } catch (error) {
+        showToast('Error loading configuration', 'error');
+        // Config load error
+    } finally {
+        hideLoading();
+    }
+}
+
+// Populate form with configuration data
+function populateForm(config) {
+    // API Configuration
+    if (config.api) {
+        document.getElementById('apiKey').value = config.api.api_key || '';
+        document.getElementById('apiSecret').value = config.api.api_secret || '';
+        document.getElementById('accessToken').value = config.api.access_token || '';
+        document.getElementById('paperTrading').checked = config.api.paper_trading !== false;
+    }
+    
+    // Trading Parameters
+    if (config.trading) {
+        document.getElementById('portfolioValue').value = config.trading.portfolio_value || 100000;
+        document.getElementById('maxPositions').value = config.trading.max_positions || 5;
+        document.getElementById('positionSizePercent').value = config.trading.position_size_percent || 5.0;
+        document.getElementById('stopLossPercent').value = config.trading.stop_loss_percent || 3.0;
+        document.getElementById('profitTargetPercent').value = config.trading.profit_target_percent || 6.0;
+        document.getElementById('tradingMode').value = config.trading.trading_mode || 'MANUAL';
+        document.getElementById('marketOpenTime').value = config.trading.market_open_time || '09:15';
+        document.getElementById('marketCloseTime').value = config.trading.market_close_time || '15:30';
+    }
+    
+    // Risk Management
+    if (config.risk) {
+        document.getElementById('dailyLossLimit').value = config.risk.daily_loss_limit || 5000;
+        document.getElementById('weeklyLossLimit').value = config.risk.weekly_loss_limit || 15000;
+        document.getElementById('maxDrawdown').value = config.risk.max_drawdown || 10.0;
+        document.getElementById('maxPositionSize').value = config.risk.max_position_size || 50000;
+        document.getElementById('correlationLimit').value = config.risk.correlation_limit || 60.0;
+        document.getElementById('volatilityThreshold').value = config.risk.volatility_threshold || 25.0;
+        document.getElementById('emergencyStopEnabled').checked = config.risk.emergency_stop_enabled !== false;
+        document.getElementById('riskAlertsEnabled').checked = config.risk.risk_alerts_enabled !== false;
+    }
+    
+    // Telegram Bot
+    if (config.telegram) {
+        document.getElementById('botToken').value = config.telegram.bot_token || '';
+        document.getElementById('authorizedChats').value = (config.telegram.chat_ids || []).join('\n');
+        document.getElementById('approvalTimeout').value = config.telegram.approval_timeout || 5;
+        document.getElementById('maxRetries').value = config.telegram.max_retries || 3;
+        document.getElementById('enableSignalNotifications').checked = config.telegram.enable_signal_notifications !== false;
+        document.getElementById('enableTradeNotifications').checked = config.telegram.enable_trade_notifications !== false;
+        document.getElementById('enableRiskAlerts').checked = config.telegram.enable_risk_alerts !== false;
+    }
+    
+    // Scanner Settings
+    if (config.scanner) {
+        document.getElementById('minGapPercent').value = config.scanner.min_gap_percent || 3.0;
+        document.getElementById('minVolumeRatio').value = config.scanner.min_volume_ratio || 2.0;
+        document.getElementById('minMarketCap').value = config.scanner.min_market_cap || 1000;
+        document.getElementById('maxMarketCap').value = config.scanner.max_market_cap || 500000;
+        document.getElementById('scanInterval').value = config.scanner.scan_interval || 15;
+        document.getElementById('confidenceThreshold').value = config.scanner.confidence_threshold || 70;
+        document.getElementById('excludedSymbols').value = (config.scanner.excluded_symbols || []).join(', ');
+        document.getElementById('enablePreMarketScan').checked = config.scanner.enable_premarket_scan !== false;
+        document.getElementById('enableEarningsFilter').checked = config.scanner.enable_earnings_filter !== false;
+    }
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    // Save configuration
+    document.getElementById('saveConfig').addEventListener('click', saveConfiguration);
+    
+    // Reset configuration
+    document.getElementById('resetConfig').addEventListener('click', resetConfiguration);
+    
+    // Export configuration
+    document.getElementById('exportConfig').addEventListener('click', exportConfiguration);
+    
+    // Test API connection
+    document.getElementById('testConnection').addEventListener('click', testApiConnection);
+    
+    // Generate access token
+    document.getElementById('generateToken').addEventListener('click', generateAccessToken);
+    
+    // Test Telegram bot
+    document.getElementById('testTelegram').addEventListener('click', testTelegramBot);
+    
+    // Form validation
+    setupFormValidation();
+}
+
+// Save configuration
+async function saveConfiguration() {
+    try {
+        showLoading();
+        
+        const config = {
+            api: {
+                api_key: document.getElementById('apiKey').value,
+                api_secret: document.getElementById('apiSecret').value,
+                access_token: document.getElementById('accessToken').value,
+                paper_trading: document.getElementById('paperTrading').checked
+            },
+            trading: {
+                portfolio_value: parseFloat(document.getElementById('portfolioValue').value),
+                max_positions: parseInt(document.getElementById('maxPositions').value),
+                position_size_percent: parseFloat(document.getElementById('positionSizePercent').value),
+                stop_loss_percent: parseFloat(document.getElementById('stopLossPercent').value),
+                profit_target_percent: parseFloat(document.getElementById('profitTargetPercent').value),
+                trading_mode: document.getElementById('tradingMode').value,
+                market_open_time: document.getElementById('marketOpenTime').value,
+                market_close_time: document.getElementById('marketCloseTime').value
+            },
+            risk: {
+                daily_loss_limit: parseFloat(document.getElementById('dailyLossLimit').value),
+                weekly_loss_limit: parseFloat(document.getElementById('weeklyLossLimit').value),
+                max_drawdown: parseFloat(document.getElementById('maxDrawdown').value),
+                max_position_size: parseFloat(document.getElementById('maxPositionSize').value),
+                correlation_limit: parseFloat(document.getElementById('correlationLimit').value),
+                volatility_threshold: parseFloat(document.getElementById('volatilityThreshold').value),
+                emergency_stop_enabled: document.getElementById('emergencyStopEnabled').checked,
+                risk_alerts_enabled: document.getElementById('riskAlertsEnabled').checked
+            },
+            telegram: {
+                bot_token: document.getElementById('botToken').value,
+                chat_ids: document.getElementById('authorizedChats').value.split('\n').filter(id => id.trim()),
+                approval_timeout: parseInt(document.getElementById('approvalTimeout').value),
+                max_retries: parseInt(document.getElementById('maxRetries').value),
+                enable_signal_notifications: document.getElementById('enableSignalNotifications').checked,
+                enable_trade_notifications: document.getElementById('enableTradeNotifications').checked,
+                enable_risk_alerts: document.getElementById('enableRiskAlerts').checked
+            },
+            scanner: {
+                min_gap_percent: parseFloat(document.getElementById('minGapPercent').value),
+                min_volume_ratio: parseFloat(document.getElementById('minVolumeRatio').value),
+                min_market_cap: parseFloat(document.getElementById('minMarketCap').value),
+                max_market_cap: parseFloat(document.getElementById('maxMarketCap').value),
+                scan_interval: parseInt(document.getElementById('scanInterval').value),
+                confidence_threshold: parseInt(document.getElementById('confidenceThreshold').value),
+                excluded_symbols: document.getElementById('excludedSymbols').value.split(',').map(s => s.trim()).filter(s => s),
+                enable_premarket_scan: document.getElementById('enablePreMarketScan').checked,
+                enable_earnings_filter: document.getElementById('enableEarningsFilter').checked
+            }
+        };
+        
+        const response = await fetch('/api/config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Configuration saved successfully', 'success');
+        } else {
+            showToast('Failed to save configuration: ' + result.error, 'error');
+        }
+    } catch (error) {
+        showToast('Error saving configuration', 'error');
+        // Config save error
+    } finally {
+        hideLoading();
+    }
+}
+
+// Reset to default configuration
+function resetConfiguration() {
+    if (confirm('Are you sure you want to reset all settings to defaults? This cannot be undone.')) {
+        // Reset to default values
+        document.getElementById('portfolioValue').value = 100000;
+        document.getElementById('maxPositions').value = 5;
+        document.getElementById('positionSizePercent').value = 5.0;
+        document.getElementById('stopLossPercent').value = 3.0;
+        document.getElementById('profitTargetPercent').value = 6.0;
+        document.getElementById('tradingMode').value = 'MANUAL';
+        document.getElementById('marketOpenTime').value = '09:15';
+        document.getElementById('marketCloseTime').value = '15:30';
+        
+        document.getElementById('dailyLossLimit').value = 5000;
+        document.getElementById('weeklyLossLimit').value = 15000;
+        document.getElementById('maxDrawdown').value = 10.0;
+        document.getElementById('maxPositionSize').value = 50000;
+        document.getElementById('correlationLimit').value = 60.0;
+        document.getElementById('volatilityThreshold').value = 25.0;
+        document.getElementById('emergencyStopEnabled').checked = true;
+        document.getElementById('riskAlertsEnabled').checked = true;
+        
+        document.getElementById('approvalTimeout').value = 5;
+        document.getElementById('maxRetries').value = 3;
+        document.getElementById('enableSignalNotifications').checked = true;
+        document.getElementById('enableTradeNotifications').checked = true;
+        document.getElementById('enableRiskAlerts').checked = true;
+        
+        document.getElementById('minGapPercent').value = 3.0;
+        document.getElementById('minVolumeRatio').value = 2.0;
+        document.getElementById('minMarketCap').value = 1000;
+        document.getElementById('maxMarketCap').value = 500000;
+        document.getElementById('scanInterval').value = 15;
+        document.getElementById('confidenceThreshold').value = 70;
+        document.getElementById('enablePreMarketScan').checked = true;
+        document.getElementById('enableEarningsFilter').checked = true;
+        
+        showToast('Configuration reset to defaults', 'info');
+    }
+}
+
+// Export configuration
+function exportConfiguration() {
+    const config = {
+        // Collect all form data (similar to save function but without sensitive data)
+        trading: {
+            portfolio_value: parseFloat(document.getElementById('portfolioValue').value),
+            max_positions: parseInt(document.getElementById('maxPositions').value),
+            position_size_percent: parseFloat(document.getElementById('positionSizePercent').value),
+            stop_loss_percent: parseFloat(document.getElementById('stopLossPercent').value),
+            profit_target_percent: parseFloat(document.getElementById('profitTargetPercent').value),
+            trading_mode: document.getElementById('tradingMode').value
+        },
+        risk: {
+            daily_loss_limit: parseFloat(document.getElementById('dailyLossLimit').value),
+            weekly_loss_limit: parseFloat(document.getElementById('weeklyLossLimit').value),
+            max_drawdown: parseFloat(document.getElementById('maxDrawdown').value),
+            max_position_size: parseFloat(document.getElementById('maxPositionSize').value)
+        },
+        scanner: {
+            min_gap_percent: parseFloat(document.getElementById('minGapPercent').value),
+            min_volume_ratio: parseFloat(document.getElementById('minVolumeRatio').value),
+            confidence_threshold: parseInt(document.getElementById('confidenceThreshold').value)
+        }
+    };
+    
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "earnings_gap_trader_config.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    
+    showToast('Configuration exported', 'success');
+}
+
+// Test API connection
+async function testApiConnection() {
+    const apiKey = document.getElementById('apiKey').value;
+    const accessToken = document.getElementById('accessToken').value;
+    
+    if (!apiKey || !accessToken) {
+        showToast('Please enter API key and access token', 'warning');
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        const response = await fetch('/api/test-connection', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                api_key: apiKey,
+                access_token: accessToken
+            })
+        });
+        
+        const result = await response.json();
+        const statusElement = document.getElementById('connectionStatus');
+        
+        if (result.success) {
+            statusElement.textContent = 'Connected';
+            statusElement.className = 'badge bg-success ms-2';
+            showToast('API connection successful', 'success');
+        } else {
+            statusElement.textContent = 'Failed';
+            statusElement.className = 'badge bg-danger ms-2';
+            showToast('API connection failed: ' + result.error, 'error');
+        }
+    } catch (error) {
+        document.getElementById('connectionStatus').textContent = 'Error';
+        document.getElementById('connectionStatus').className = 'badge bg-danger ms-2';
+        showToast('Connection test error', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Generate access token
+async function generateAccessToken() {
+    const apiKey = document.getElementById('apiKey').value;
+    const apiSecret = document.getElementById('apiSecret').value;
+    const requestToken = document.getElementById('requestToken').value;
+    
+    if (!apiKey || !apiSecret) {
+        showToast('Please enter API key and secret first', 'warning');
+        return;
+    }
+    
+    if (!requestToken) {
+        showToast('Please enter request token', 'warning');
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        const response = await fetch('/api/generate-token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                api_key: apiKey,
+                api_secret: apiSecret,
+                request_token: requestToken
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('accessToken').value = result.access_token;
+            showToast('Access token generated successfully', 'success');
+        } else {
+            showToast('Failed to generate access token: ' + result.error, 'error');
+        }
+    } catch (error) {
+        showToast('Token generation error', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Test Telegram bot
+async function testTelegramBot() {
+    const botToken = document.getElementById('botToken').value;
+    const chatIds = document.getElementById('authorizedChats').value.split('\n').filter(id => id.trim());
+    
+    if (!botToken) {
+        showToast('Please enter bot token first', 'warning');
+        return;
+    }
+    
+    if (chatIds.length === 0) {
+        showToast('Please enter at least one chat ID', 'warning');
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        const response = await fetch('/api/test-telegram', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                bot_token: botToken,
+                chat_ids: chatIds
+            })
+        });
+        
+        const result = await response.json();
+        const statusElement = document.getElementById('telegramStatus');
+        
+        if (result.success) {
+            statusElement.textContent = 'Connected';
+            statusElement.className = 'badge bg-success ms-2';
+            showToast('Telegram bot test successful', 'success');
+        } else {
+            statusElement.textContent = 'Failed';
+            statusElement.className = 'badge bg-danger ms-2';
+            showToast('Telegram bot test failed: ' + result.error, 'error');
+        }
+    } catch (error) {
+        document.getElementById('telegramStatus').textContent = 'Error';
+        document.getElementById('telegramStatus').className = 'badge bg-danger ms-2';
+        showToast('Telegram test error', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Setup form validation
+function setupFormValidation() {
+    // Add real-time validation for key fields
+    const numericFields = [
+        'portfolioValue', 'maxPositions', 'positionSizePercent', 'stopLossPercent',
+        'profitTargetPercent', 'dailyLossLimit', 'weeklyLossLimit', 'maxDrawdown',
+        'maxPositionSize', 'correlationLimit', 'volatilityThreshold', 'approvalTimeout',
+        'maxRetries', 'minGapPercent', 'minVolumeRatio', 'minMarketCap', 'maxMarketCap',
+        'scanInterval', 'confidenceThreshold'
+    ];
+    
+    numericFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', function() {
+                validateNumericField(this);
+            });
+        }
+    });
+}
+
+// Validate numeric field
+function validateNumericField(field) {
+    const value = parseFloat(field.value);
+    const min = parseFloat(field.getAttribute('min'));
+    const max = parseFloat(field.getAttribute('max'));
+    
+    if (isNaN(value) || (min !== null && value < min) || (max !== null && value > max)) {
+        field.classList.add('is-invalid');
+    } else {
+        field.classList.remove('is-invalid');
+    }
+}
+</script>
+{% endblock %}

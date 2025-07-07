@@ -1,0 +1,78 @@
+# Systemd service file for Earnings Gap Trading System
+# Location: /etc/systemd/system/earnings-gap-trader.service
+
+[Unit]
+Description=Earnings Gap Trading System
+Documentation=https://github.com/your-org/earnings-gap-trader
+After=network.target postgresql.service redis.service
+Wants=network.target
+Requires=postgresql.service redis.service
+
+[Service]
+Type=exec
+User=trader
+Group=trader
+WorkingDirectory=/opt/earnings_gap_trader/app
+Environment=PATH=/opt/earnings_gap_trader/venv/bin
+EnvironmentFile=/opt/earnings_gap_trader/config/.env
+
+# Main application process
+ExecStart=/opt/earnings_gap_trader/venv/bin/uvicorn main:app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --workers 4 \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --access-log \
+    --log-level info
+
+# Graceful reload
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Restart configuration
+Restart=always
+RestartSec=3
+StartLimitBurst=5
+StartLimitInterval=300
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+MemoryLimit=2G
+CPUQuota=100%
+
+# Security measures
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/earnings_gap_trader /var/log/earnings_gap_trader /opt/backups/earnings_gap_trader
+PrivateDevices=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+RestrictRealtime=true
+RestrictNamespaces=true
+
+# Network security
+IPAddressDeny=any
+IPAddressAllow=localhost
+IPAddressAllow=10.0.0.0/8
+IPAddressAllow=172.16.0.0/12
+IPAddressAllow=192.168.0.0/16
+
+# Process management
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=earnings-gap-trader
+
+# Working directory permissions
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target
+Also=earnings-gap-trader-worker.service earnings-gap-trader-scheduler.service
